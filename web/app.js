@@ -1,67 +1,114 @@
-/* web/app.js  */
+/* -----------------------------------------------------------------
+   Gyro → WebSocket phone controller
+   ----------------------------------------------------------------- */
 
-////////////////////  tiny UI helper  ////////////////////
-const statusEl = document.getElementById("status");
-const status   = txt => (statusEl.textContent = txt);
+/* --- UI handles ------------------------------------------------- */
+const wheel      = document.getElementById("wheel");
+const throttleEl = document.getElementById("throttle");
+const brakeEl    = document.getElementById("brake");
+const statusEl   = document.getElementById("status");
 
-////////////////////  WebSocket helpers  //////////////////
+/* helper to wire any on-screen button */
+// haptic helper –  does nothing on browsers that don’t support vibration
+const buzz = () => navigator.vibrate?.(20);   // 20 ms tap
+
+/*****  rumble relay  *****/
+function handleServerMsg(e) {
+  try {
+    const msg = JSON.parse(e.data);
+    if ("rumble" in msg) {
+      navigator.vibrate?.(msg.rumble);  // Android/Chrome vibrates; iOS ignores
+    }
+  } catch (_) {}                        // ignore non-JSON frames
+}
+
+
+function setupButton(el, key) {
+  const press = (pressed) => {
+    send({ btn: key, pressed });
+    el.classList.toggle("down", pressed);
+    if (pressed) buzz();
+  };
+  ["touchstart", "mousedown"].forEach((evt) =>
+    el.addEventListener(evt, (e) => {
+      e.preventDefault();
+      press(true);
+    }),
+  );
+  ["touchend", "touchcancel", "mouseup", "mouseleave"].forEach((evt) =>
+    el.addEventListener(evt, () => press(false)),
+  );
+}
+
+/* map ABXY + Start + Pause (already defined in HTML) */
+["A", "B", "X", "Y", "Start", "Pause"].forEach((id) =>
+  setupButton(document.getElementById("btn" + id), id.toUpperCase()),
+);
+
+/* -----------------------------------------------------------------
+   STEERING PARAMETERS
+   ----------------------------------------------------------------- */
+const STEER_MAX_DEG = 30;   // hard clamp – don’t touch
+const STEER_GAIN    = 2.0;  // 1.0 = old feel, >1 = more sensitive
+/* ----------------------------------------------------------------- */
+
+const setStatus = (txt) => (statusEl.textContent = txt);
+
+/* --- WebSocket helpers ------------------------------------------ */
 let ws;
 function connectWS() {
-  // Pick the correct scheme for the current page
   const scheme = location.protocol === "https:" ? "wss" : "ws";
   ws = new WebSocket(`${scheme}://${location.host}/ws`);
-
-  ws.addEventListener("open",  () => status("🔌 WS connected"));
-  ws.addEventListener("close", () => status("❌ WS closed"));
-  ws.addEventListener("error", () => status("⚠️ WS error"));
+  ws.addEventListener("open", () => setStatus("🔌 WS connected"));
+  ws.addEventListener("close", () => setStatus("❌ WS closed"));
+  ws.addEventListener("error", () => setStatus("⚠️ WS error"));
+  ws.addEventListener("message", handleServerMsg);
 }
+const send = (payload) =>
+  ws?.readyState === WebSocket.OPEN && ws.send(JSON.stringify(payload));
 
-function send(payload) {
-  if (ws?.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify(payload));
-  }
-}
+/* --- Device-orientation steering -------------------------------- */
+const STEER_CLAMP = STEER_MAX_DEG;     // alias for readability
+let baseBeta = null,
+  baseGamma = null;
 
-////////////////////  Gyro handling  //////////////////////
-const STEER_MAX_DEG = 30;
-let baseBeta = null;
-let baseGamma = null;
+window.addEventListener("deviceorientation", (e) => {
+  if (e.beta == null || e.gamma == null) return;
 
-window.addEventListener("deviceorientation", e => {
-  if (e.beta == null || e.gamma == null) return;   // sensor unavailable/blocked
+  baseBeta ??= e.beta;
+  baseGamma ??= e.gamma;
 
-  if (baseBeta === null)  baseBeta  = e.beta;
-  if (baseGamma === null) baseGamma = e.gamma;
-
-  const fwd  = Math.max(0,  e.beta - baseBeta);
+  const fwd = Math.max(0, e.beta - baseBeta);
   const back = Math.max(0, -e.beta + baseBeta);
 
-  let steer = e.gamma - baseGamma;
-  steer = Math.max(-STEER_MAX_DEG, Math.min(STEER_MAX_DEG, steer));
+  let steer = (e.gamma - baseGamma) * STEER_GAIN;
+  steer = Math.max(-STEER_CLAMP, Math.min(STEER_CLAMP, steer)); // clamp
+
+  /* --- update local UI --- */
+  wheel.style.transform = `rotate(${steer}deg)`;
+  throttleEl.style.height = `${(fwd / 30) * 100}%`;
+  brakeEl.style.height = `${(back / 30) * 100}%`;
 
   send({ steer, fwd, back });
 });
 
-////////////////////  Permission gate  ////////////////////
-async function requestMotionPermission() {
-  // Needed on iOS (and some Android ROMs)
+/* --- Permission gate (iOS/Android) ------------------------------ */
+async function requestMotion() {
   if (typeof DeviceOrientationEvent?.requestPermission === "function") {
     try {
       const res = await DeviceOrientationEvent.requestPermission();
       if (res !== "granted") {
-        status("❌ Gyro permission denied");
+        setStatus("❌ Gyro permission denied");
         return;
       }
-    } catch (err) {
-      status("❌ Gyro permission error");
+    } catch {
+      setStatus("❌ Gyro permission error");
       return;
     }
   }
-
-  connectWS();          // open WebSocket only after sensors allowed
-  addEventListener("📡 Tilt to drive!");
+  connectWS();
+  setStatus("📡 Tilt to drive!");
 }
 
-////////////////////  Kick-off (wait for a tap)  ///////////
-document.addEventListener("click", requestMotionPermission, { once: true });
-status("👆 Tap once to enable gyro");
+document.addEventListener("click", requestMotion, { once: true });
+setStatus("👆 Tap once to enable gyro");

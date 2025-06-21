@@ -1,27 +1,84 @@
-<!-- web/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
 <title>GyroRacer Controller</title>
 <meta name="viewport" content="width=device-width,initial-scale=1" />
+
 <style>
-html,body{margin:0;padding:0;background:#111;color:#fff;font-family:sans-serif;overflow:hidden}
-#wheel{width:60vmin;height:60vmin;margin:5vmin auto;border:6px solid #444;border-radius:50%;
-       background:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="%231a1a1a"/><line x1="50" y1="50" x2="50" y2="5" stroke="%23666" stroke-width="4"/></svg>') center/cover;
-       transform:rotate(0deg);transition:transform .05s linear;}
-.bar{height:20vmin;width:20%;background:#444;margin:2vmin;position:relative;display:inline-block;border:2px solid #666}
-.fill{position:absolute;bottom:0;left:0;width:100%;background:#1e90ff;height:0}
-#status{position:fixed;bottom:4px;left:4px;font-size:3.5vmin;color:#888}
+html,body{
+  margin:0;padding:0;background:#111;color:#fff;
+  font-family:sans-serif;overflow:hidden;
+}
+
+/* ---------- basic layout ---------- */
+#ui           {display:flex;flex-direction:column;align-items:center;width:100vw;height:100vh;}
+#wheel        {width:60vmin;height:60vmin;margin-top:14vmin;
+               border:6px solid #444;border-radius:50%;
+               background:url('data:image/svg+xml;utf8,\
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">\
+<circle cx="50" cy="50" r="48" fill=\"%231a1a1a\"/>\
+<line x1=\"50\" y1=\"50\" x2=\"50\" y2=\"5\" stroke=\"%23666\" stroke-width=\"4\"/>\
+</svg>') center/cover;
+               transform:rotate(0deg);transition:transform .05s linear;}
+#bars         {display:flex;gap:8vmin;margin:5vmin 0;}
+.bar          {height:20vmin;width:22vmin;background:#444;border:2px solid #666;
+               position:relative;border-radius:.8vmin;overflow:hidden;}
+.fill         {position:absolute;bottom:0;left:0;width:100%;height:0;background:#1e90ff;}
+#brake.fill   {background:#ff4040;}
+
+/* ---------- top buttons (Start / Pause) ---------- */
+.topBtn       {position:fixed;top:4vmin;width:10vmin;height:10vmin;border-radius:50%;
+               background:#333;border:2px solid #777;
+               display:flex;align-items:center;justify-content:center;
+               font-size:5.2vmin;font-weight:600;color:#fff;
+               user-select:none;touch-action:none;pointer-events:auto;
+               transition:background .1s,transform .05s;}
+.topBtn.down  {background:#1e90ff;transform:scale(.9);}
+#btnStart     {left:35vw;}
+#btnPause     {right:35vw;}
+
+/* ---------- ABXY diamond ---------- */
+#buttons      {position:absolute;bottom:8vmin;right:8vmin;width:42vmin;height:42vmin;
+               pointer-events:none;}
+.btn          {position:absolute;width:14vmin;height:14vmin;border-radius:50%;
+               background:#333;border:2px solid #777;
+               display:flex;align-items:center;justify-content:center;
+               font-size:7vmin;font-weight:600;color:#fff;
+               user-select:none;touch-action:none;pointer-events:auto;
+               transition:background .1s,transform .05s;}
+.btn.down     {background:#1e90ff;transform:scale(.9);}
+#btnY         {top:0;left:50%; transform:translate(-50%,-50%);}
+#btnB         {top:50%;left:100%;transform:translate(-50%,-50%);}
+#btnA         {top:100%;left:50%;transform:translate(-50%,-50%);}
+#btnX         {top:50%;left:0; transform:translate(-50%,-50%);}
+
+#status       {position:fixed;bottom:4px;left:4px;font-size:3.5vmin;color:#888}
 </style>
 </head>
 <body>
 
-<div id="wheel"></div>
-<div style="text-align:center">
-  <div class="bar"><div id="throttle" class="fill"></div></div>
-  <div class="bar"><div id="brake" class="fill" style="background:#ff4040"></div></div>
+<!-- Start & Pause -->
+<div id="btnStart" class="topBtn">▶</div>
+<div id="btnPause" class="topBtn">⏸</div>
+
+<div id="ui">
+  <div id="wheel"></div>
+
+  <div id="bars">
+    <div class="bar"><div id="throttle" class="fill"></div></div>
+    <div class="bar"><div id="brake"    class="fill"></div></div>
+  </div>
 </div>
+
+<!-- ABXY diamond -->
+<div id="buttons">
+  <div id="btnY" class="btn">Y</div>
+  <div id="btnB" class="btn">B</div>
+  <div id="btnA" class="btn">A</div>
+  <div id="btnX" class="btn">X</div>
+</div>
+
 <div id="status">connecting…</div>
 
 <script src="app.js"></script>
