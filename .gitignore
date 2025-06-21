@@ -1,0 +1,6 @@
+.venv
+cert.pem
+key.pem
+__pycache__/
+*/__pycache__/
+*.py[cod]

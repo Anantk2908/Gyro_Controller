@@ -1,0 +1,7 @@
+# --- core server stack ---
+fastapi==0.110.0          # ASGI framework
+uvicorn[standard]==0.29.0 # production-ready ASGI runner (includes websockets & httptools)
+
+# --- virtual gamepad binding ---
+vgamepad
+
