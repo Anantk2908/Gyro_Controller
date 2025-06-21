@@ -1,5 +1,5 @@
 
-# Gyro-Controller — Server-Side Setup (Windows PC only)
+# Gyro-Controller
 
 This guide covers everything needed to spin up the WebSocket + virtual-gamepad server on a fresh Windows machine.  Client devices and game configuration are documented separately.
 
