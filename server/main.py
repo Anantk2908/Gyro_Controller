@@ -5,6 +5,8 @@ from pathlib import Path
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
 import vgamepad as vg
+import socket
+
 
 BUTTON_MAP = {
     "A":      vg.XUSB_BUTTON.XUSB_GAMEPAD_A,
@@ -29,12 +31,32 @@ main_loop: asyncio.AbstractEventLoop | None = None
 STEER_RANGE = 22                      # ± degrees from device
 TRIGGER_MAX = 255                   # Analogue trigger range
 
+def get_lan_ip() -> str:
+    """
+    Return the primary non-loopback IPv4 address (works on Win/macOS/Linux).
+    Falls back to 127.0.0.1 if no network is up.
+    """
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        # "Dummy" connect to discover the outbound interface
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except OSError:
+        return "127.0.0.1"
 
 # ------------------ FASTAPI start-up ------------------------------
 @app.on_event("startup")
 async def grab_loop():
     global main_loop
-    main_loop = asyncio.get_running_loop()     
+    main_loop = asyncio.get_running_loop()
+
+    # ------- print easy-copy URL for the phone -------------
+    ip = get_lan_ip()
+    port = 8000                       # or read from env / config
+    print(f"\n📱  Open   https://{ip}:{port}   on your phone\n")
+
 
 # ------------------ RUMBLE callback -------------------------------
 async def _broadcast_rumble(duration: int):
