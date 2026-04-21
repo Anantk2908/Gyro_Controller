@@ -78,6 +78,10 @@ gamepad.register_notification(rumble_callback)
 
 def set_controls(steer_deg: float, throttle: float, brake: float) -> None:
     """Map gyro data → virtual Xbox 360 controls."""
+    steer_deg = max(-STEER_RANGE, min(STEER_RANGE, float(steer_deg)))
+    throttle = max(0.0, min(30.0, float(throttle)))
+    brake = max(0.0, min(30.0, float(brake)))
+
     # Left stick X axis for steering
     stick_x = int((steer_deg / STEER_RANGE) * 32767)
     stick_x = max(-32767, min(32767, stick_x))
@@ -97,10 +101,10 @@ async def websocket_endpoint(ws: WebSocket):
     await ws.accept()
     connected_ws.add(ws)
 
-    # throttle vGamepad updates to 30 Hz
+    # Higher update frequency keeps steering/input latency lower.
     import time
     last_send = 0.0
-    TARGET_DT = 1 / 60
+    TARGET_DT = 1 / 120
 
     try:
         while True:
@@ -121,6 +125,7 @@ async def websocket_endpoint(ws: WebSocket):
                     gamepad.press_button(BUTTON_MAP[btn])
                 else:
                     gamepad.release_button(BUTTON_MAP[btn])
+                gamepad.update()
 
     except WebSocketDisconnect:
         set_controls(0, 0, 0)

@@ -7,6 +7,7 @@ const wheel      = document.getElementById("wheel");
 const throttleEl = document.getElementById("throttle");
 const brakeEl    = document.getElementById("brake");
 const statusEl   = document.getElementById("status");
+const calibrateEl = document.getElementById("calibrate");
 
 /* helper to wire any on-screen button */
 // haptic helper –  does nothing on browsers that don’t support vibration
@@ -56,11 +57,28 @@ const setStatus = (txt) => (statusEl.textContent = txt);
 
 /* --- WebSocket helpers ------------------------------------------ */
 let ws;
+let reconnectAttempts = 0;
+let motionReady = false;
+
+function reconnectDelayMs() {
+  const base = 400;
+  const max = 4000;
+  return Math.min(max, base * 2 ** reconnectAttempts);
+}
+
 function connectWS() {
   const scheme = location.protocol === "https:" ? "wss" : "ws";
   ws = new WebSocket(`${scheme}://${location.host}/ws`);
-  ws.addEventListener("open", () => setStatus("🔌 WS connected"));
-  ws.addEventListener("close", () => setStatus("❌ WS closed"));
+  ws.addEventListener("open", () => {
+    reconnectAttempts = 0;
+    setStatus("🔌 WS connected");
+  });
+  ws.addEventListener("close", () => {
+    setStatus("❌ WS closed (reconnecting)");
+    if (!motionReady) return;
+    reconnectAttempts += 1;
+    setTimeout(connectWS, reconnectDelayMs());
+  });
   ws.addEventListener("error", () => setStatus("⚠️ WS error"));
   ws.addEventListener("message", handleServerMsg);
 }
@@ -71,6 +89,10 @@ const send = (payload) =>
 const STEER_CLAMP = STEER_MAX_DEG;     // alias for readability
 let baseBeta = null,
   baseGamma = null;
+let latestInput = { steer: 0, fwd: 0, back: 0 };
+let lastSent = { steer: 0, fwd: 0, back: 0 };
+const SEND_HZ = 120;
+const EPS = 0.15;
 
 window.addEventListener("deviceorientation", (e) => {
   if (e.beta == null || e.gamma == null) return;
@@ -89,8 +111,30 @@ window.addEventListener("deviceorientation", (e) => {
   throttleEl.style.height = `${(fwd / 30) * 100}%`;
   brakeEl.style.height = `${(back / 30) * 100}%`;
 
-  send({ steer, fwd, back });
+  latestInput = { steer, fwd, back };
 });
+
+function recenter() {
+  baseBeta = null;
+  baseGamma = null;
+  latestInput = { steer: 0, fwd: 0, back: 0 };
+  send({ steer: 0, fwd: 0, back: 0 });
+  setStatus("🎯 Recentered");
+}
+
+calibrateEl.addEventListener("click", recenter);
+
+setInterval(() => {
+  const { steer, fwd, back } = latestInput;
+  const changed =
+    Math.abs(steer - lastSent.steer) > EPS ||
+    Math.abs(fwd - lastSent.fwd) > EPS ||
+    Math.abs(back - lastSent.back) > EPS;
+
+  if (!changed) return;
+  send({ steer, fwd, back });
+  lastSent = { steer, fwd, back };
+}, 1000 / SEND_HZ);
 
 /* --- Permission gate (iOS/Android) ------------------------------ */
 async function requestMotion() {
@@ -106,6 +150,7 @@ async function requestMotion() {
       return;
     }
   }
+  motionReady = true;
   connectWS();
   setStatus("📡 Tilt to drive!");
 }
