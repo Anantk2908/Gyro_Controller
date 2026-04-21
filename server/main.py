@@ -97,10 +97,10 @@ async def websocket_endpoint(ws: WebSocket):
     await ws.accept()
     connected_ws.add(ws)
 
-    # throttle vGamepad updates to 30 Hz
+    # Higher update frequency keeps steering/input latency lower.
     import time
     last_send = 0.0
-    TARGET_DT = 1 / 60
+    TARGET_DT = 1 / 120
 
     try:
         while True:

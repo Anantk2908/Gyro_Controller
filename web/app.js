@@ -71,6 +71,10 @@ const send = (payload) =>
 const STEER_CLAMP = STEER_MAX_DEG;     // alias for readability
 let baseBeta = null,
   baseGamma = null;
+let latestInput = { steer: 0, fwd: 0, back: 0 };
+let lastSent = { steer: 0, fwd: 0, back: 0 };
+const SEND_HZ = 120;
+const EPS = 0.15;
 
 window.addEventListener("deviceorientation", (e) => {
   if (e.beta == null || e.gamma == null) return;
@@ -89,8 +93,20 @@ window.addEventListener("deviceorientation", (e) => {
   throttleEl.style.height = `${(fwd / 30) * 100}%`;
   brakeEl.style.height = `${(back / 30) * 100}%`;
 
-  send({ steer, fwd, back });
+  latestInput = { steer, fwd, back };
 });
+
+setInterval(() => {
+  const { steer, fwd, back } = latestInput;
+  const changed =
+    Math.abs(steer - lastSent.steer) > EPS ||
+    Math.abs(fwd - lastSent.fwd) > EPS ||
+    Math.abs(back - lastSent.back) > EPS;
+
+  if (!changed) return;
+  send({ steer, fwd, back });
+  lastSent = { steer, fwd, back };
+}, 1000 / SEND_HZ);
 
 /* --- Permission gate (iOS/Android) ------------------------------ */
 async function requestMotion() {
