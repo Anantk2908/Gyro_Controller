@@ -107,6 +107,13 @@ You cannot make network/controller latency literally zero, but you can make it f
 7. **Use wired Ethernet for the PC running the bridge**.  
    This removes one wireless hop and reduces latency variance.
 8. **Avoid TLS certificate warnings/retries during play**.  
+3. **Use 5 GHz Wi‑Fi and keep phone close to AP/router**.  
+   Avoid congested 2.4 GHz channels and power-saving modes.
+4. **Keep the phone screen awake and foregrounded**.  
+   Mobile OS backgrounding can heavily throttle sensor callbacks.
+5. **Use wired Ethernet for the PC running the bridge**.  
+   This removes one wireless hop and reduces latency variance.
+6. **Avoid TLS certificate warnings/retries during play**.  
    Pair once, trust cert, then keep the session stable.
 
 For truly lower latency than WebSocket-over-TLS can provide, future options include a UDP/WebRTC data channel transport and binary payload encoding.
@@ -127,5 +134,6 @@ For truly lower latency than WebSocket-over-TLS can provide, future options incl
 | Sensors freeze after the screen locks                                   | Mobile OS suspends JS when the tab is in the background.                                | Disable auto‑lock, keep the screen on (Android Chrome flag or iOS Guided Access).                                                           |
 
 ---
+
 
 
