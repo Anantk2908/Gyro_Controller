@@ -82,6 +82,7 @@ The server is now listening securely on port 8000 and ready to accept WebSocket 
    Accept the self‑signed‑certificate warning.
 3. Tap once → grant the **Motion & Orientation** permission.
 4. Tilt to drive! Blue bar = throttle, red = brake.
+5. If steering drifts, tap **Recenter** to reset neutral tilt without reconnecting.
 
 Games will now see a standard Xbox 360 pad (left‑stick X + triggers).
 
@@ -95,6 +96,17 @@ You cannot make network/controller latency literally zero, but you can make it f
    The web client now transmits at up to **120 Hz** and only sends when values change, which prevents queue buildup/jitter from sensor bursts.
 2. **Match server processing cadence to client cadence**.  
    The FastAPI bridge now applies control updates at up to **120 Hz**, reducing control quantization delay.
+3. **Auto-reconnect after temporary Wi‑Fi drops**.  
+   The web client now retries WebSocket connection with backoff, reducing manual recovery time.
+4. **Recenter quickly after posture shifts**.  
+   Use the in-app **Recenter** button to reset baseline orientation instantly.
+5. **Use 5 GHz Wi‑Fi and keep phone close to AP/router**.  
+   Avoid congested 2.4 GHz channels and power-saving modes.
+6. **Keep the phone screen awake and foregrounded**.  
+   Mobile OS backgrounding can heavily throttle sensor callbacks.
+7. **Use wired Ethernet for the PC running the bridge**.  
+   This removes one wireless hop and reduces latency variance.
+8. **Avoid TLS certificate warnings/retries during play**.  
 3. **Use 5 GHz Wi‑Fi and keep phone close to AP/router**.  
    Avoid congested 2.4 GHz channels and power-saving modes.
 4. **Keep the phone screen awake and foregrounded**.  

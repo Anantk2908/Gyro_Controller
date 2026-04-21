@@ -54,6 +54,11 @@ html,body{
 #btnX         {top:50%;left:0; transform:translate(-50%,-50%);}
 
 #status       {position:fixed;bottom:4px;left:4px;font-size:3.5vmin;color:#888}
+#calibrate    {position:fixed;bottom:4vmin;right:4vmin;
+               padding:1.8vmin 3vmin;border-radius:2vmin;border:2px solid #777;
+               background:#222;color:#fff;font-size:3.5vmin;font-weight:600;
+               touch-action:manipulation;}
+#calibrate:active {transform:scale(.98);}
 </style>
 </head>
 <body>
@@ -80,6 +85,7 @@ html,body{
 </div>
 
 <div id="status">connecting…</div>
+<button id="calibrate" type="button">Recenter</button>
 
 <script src="app.js"></script>
 </body>
